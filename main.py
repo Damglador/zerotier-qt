@@ -349,6 +349,7 @@ class PeersList(QDialog):
     self.refreshBtn.setIcon(QIcon.fromTheme("view-refresh"))
     self.refreshBtn.clicked.connect(self.refresh)
     self.pathsBtn = self.buttonBox.addButton("Show Paths", QDialogButtonBox.ButtonRole.ActionRole)
+    self.pathsBtn.setToolTip("Show paths for the selected peer")
     self.pathsBtn.setIcon(QIcon.fromTheme("show-all-effects"))
     self.pathsBtn.clicked.connect(self.peerpaths)
     self.closeBtn = self.buttonBox.addButton(QDialogButtonBox.StandardButton.Close)
@@ -488,6 +489,7 @@ class MainWindow(QMainWindow):
     topSubLayout.addWidget(self.joinTextBox)
     joinBtn = QPushButton()
     joinBtn.setIcon(QIcon.fromTheme("dialog-ok"))
+    joinBtn.setToolTip("Join")
     joinBtn.clicked.connect(self.call_join_network)
     topSubLayout.addWidget(joinBtn)
 
@@ -509,6 +511,7 @@ class MainWindow(QMainWindow):
 
     refreshBtn = QPushButton("Refresh")
     refreshBtn.setIcon(QIcon.fromTheme("view-refresh"))
+    refreshBtn.setToolTip("Refresh networks list")
     refreshBtn.clicked.connect(self.refresh_networks)
     topSubLayout.addWidget(refreshBtn)
 
@@ -565,10 +568,12 @@ class MainWindow(QMainWindow):
     # TODO: open https://central.zerotier.com/network/NETWORKID to go directly to network's page
     oldcentralBtn = QPushButton("Old Central")
     oldcentralBtn.setIcon(QIcon.fromTheme("zerotier-central-old"))
+    oldcentralBtn.setToolTip("Open ZeroTier Legacy Central in your browser")
     oldcentralBtn.clicked.connect(lambda: QDesktopServices.openUrl("https://my.zerotier.com"))
     bottomSubLayout.addWidget(oldcentralBtn)
     newcentralBtn = QPushButton("New Central")
     newcentralBtn.setIcon(QIcon.fromTheme("zerotier-central-new"))
+    newcentralBtn.setToolTip("Open ZeroTier New Central in your browser")
     newcentralBtn.clicked.connect(lambda: QDesktopServices.openUrl("https://central.zerotier.com"))
     bottomSubLayout.addWidget(newcentralBtn)
 
@@ -599,17 +604,17 @@ class MainWindow(QMainWindow):
     # Set checkbox state
     if status["UnitFileState"] == "enabled":
       self.serviceCheckBox.setChecked(True)
-      self.serviceCheckBox.setToolTip("Disable Service")
+      self.serviceCheckBox.setToolTip("Disable ZeroTier Service")
     else:
       self.serviceCheckBox.setChecked(False)
-      self.serviceCheckBox.setToolTip("Enable Service")
+      self.serviceCheckBox.setToolTip("Enable ZeroTier Service")
     # Set button state
     if status["ActiveState"] == "active":
       self.serviceBtn.setIcon(QIcon.fromTheme("media-playback-pause"))
-      self.serviceBtn.setToolTip("Stop Service")
+      self.serviceBtn.setToolTip("Stop ZeroTier Service")
     else:
       self.serviceBtn.setIcon(QIcon.fromTheme("media-playback-start"))
-      self.serviceBtn.setToolTip("Start Service")
+      self.serviceBtn.setToolTip("Start ZeroTier Service")
   def call_peerslist(self):
     peerslist = PeersList(self)
     peerslist.show()
