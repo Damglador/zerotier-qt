@@ -261,7 +261,7 @@ def setup_auth_token():
 def about_window():
   QMessageBox.about(
       None,
-      QApplication.applicationDisplayName(),
+      "About",
       f"""
       <b>ZeroTier Version {get_status()[3]}<br>
       {QApplication.applicationDisplayName()} Version {QApplication.applicationVersion()}</b><br>
