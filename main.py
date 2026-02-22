@@ -143,8 +143,6 @@ def get_interface_state(interface):
     if info["ifname"] == interface:
       state = info["operstate"]
       break
-    state = "UNKNOWN"
-
   return state # pyright: ignore
 
 def leave_network(networkId, networkName=None):
@@ -314,7 +312,7 @@ def networkinfo(networkIndex: int, parent: QWidget=None): # pyright: ignore[repo
   except IndexError:
     layout.addRow(QLabel("Assigned Addresses:"), QLabel("-"))
   layout.addRow(QLabel("Status:"), QLabel(currentNetworkInfo["status"]))
-  layout.addRow(QLabel("State:"), QLabel(currentNetworkInfo["portDeviceName"]))
+  layout.addRow(QLabel("State:"), QLabel(get_interface_state(currentNetworkInfo["portDeviceName"])))
   layout.addRow(QLabel("Type:"), QLabel(currentNetworkInfo["type"]))
   layout.addRow(QLabel("Device:"), QLabel(currentNetworkInfo["portDeviceName"]))
   layout.addRow(QLabel("Bridge:"), QLabel("True" if currentNetworkInfo["bridge"] else "False"))
