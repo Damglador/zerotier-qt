@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=ZeroTier Qt
+GenericName=ZeroTier Qt
+Comment=Qt front-end for ZeroTier
+Icon=zerotier-qt
+Exec=zerotier-qt
+StartupWMClass=zerotier-qt
+Type=Application
+Terminal=false
+StartupNotify=false
+Categories=Utility;
+Version=1.0
