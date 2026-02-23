@@ -59,15 +59,22 @@ CONFIG_DIR = os.path.join(
   APP_ID
 )
 AUTH_FILE = os.path.join(CONFIG_DIR, "authtoken.secret")
+authtoken = None
 
 # ============ CONTROLLER ==================
 def get_token() -> str:
+  global authtoken
+  if authtoken is not None:
+    return authtoken
   if os.getuid() == 0:
-    return open("/var/lib/zerotier-one/authtoken.secret").read().strip()
+    authtoken = open("/var/lib/zerotier-one/authtoken.secret").read().strip()
+    return authtoken
   else:
     if os.path.isfile(".zeroTierOneAuthToken"):
-      return open(os.path.join(HOME_DIR, ".zeroTierOneAuthToken")).read().strip()
-    return open(AUTH_FILE).read().strip()
+      authtoken = open(os.path.join(HOME_DIR, ".zeroTierOneAuthToken")).read().strip()
+      return authtoken
+    authtoken = open(AUTH_FILE).read().strip()
+    return authtoken
 
 def get_status():
   status = check_output(["zerotier-cli", f"-T{get_token()}", "status"]).decode()
