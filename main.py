@@ -28,7 +28,7 @@
 ###################################
 
 from PySide6.QtCore import (
-  QTimer, Qt,
+  QStandardPaths, QTimer, Qt,
 )
 from PySide6.QtGui import (
   QAction, QBrush, QColor, QDesktopServices,
@@ -44,17 +44,32 @@ import os
 import sys
 import json
 import signal
-import getpass
 import textwrap
-from subprocess import check_output, STDOUT, CalledProcessError
+import subprocess as proc
+from subprocess import check_call, check_output, STDOUT, CalledProcessError
 
 APP_ID = "zerotier-qt"
 APP_NAME = "ZeroTier-Qt"
 APP_VERSION = "0.9"
 
+HOME_DIR = str(QStandardPaths.standardLocations(QStandardPaths.StandardLocation.HomeLocation)[0])
+CONFIG_DIR = os.path.join(
+  str(QStandardPaths.standardLocations(QStandardPaths.StandardLocation.GenericConfigLocation)[0]),
+  APP_ID
+)
+AUTH_FILE = os.path.join(CONFIG_DIR, "authtoken.secret")
+
 # ============ CONTROLLER ==================
+def get_token() -> str:
+  if os.getuid() == 0:
+    return open("/var/lib/zerotier-one/authtoken.secret").read().strip()
+  else:
+    if os.path.isfile(".zeroTierOneAuthToken"):
+      return open(os.path.join(HOME_DIR, ".zeroTierOneAuthToken")).read().strip()
+    return open(AUTH_FILE).read().strip()
+
 def get_status():
-  status = check_output(["zerotier-cli", "status"]).decode()
+  status = check_output(["zerotier-cli", f"-T{get_token()}", "status"]).decode()
   status = status.split()
   return status
 
@@ -73,12 +88,7 @@ def change_config(network_id: str, config: str, value):
   value = int(value)
   try:
     check_output(
-      [
-        "zerotier-cli",
-        "set",
-        network_id,
-        f"{config}={value}",
-      ],
+      ["zerotier-cli", f"-T{get_token()}", "set", network_id, f"{config}={value}",],
       stderr=STDOUT,
     )
   except CalledProcessError as error:
@@ -106,7 +116,7 @@ def join_network(network_id):
         "You are already a member of this network.",
       )
       return False
-    check_output(["zerotier-cli", "join", network_id])
+    check_call(["zerotier-cli", f"-T{get_token()}", "join", network_id])
     return True
   except CalledProcessError:
     QMessageBox.warning(
@@ -124,15 +134,13 @@ def get_network_name_by_id(network_id):
 
 # TODO: describe data structure
 def get_networks_info():
-  return json.loads(check_output(["zerotier-cli", "-j", "listnetworks"]))
+  return json.loads(check_output(["zerotier-cli", f"-T{get_token()}", "-j", "listnetworks"]))
 
 def get_peers_info():
-  return json.loads(check_output(["zerotier-cli", "-j", "peers"]))
+  return json.loads(check_output(["zerotier-cli", f"-T{get_token()}", "-j", "peers"]))
 
 def get_interface_state(interface):
-  interfaceInfo = json.loads(
-    check_output(["ip", "--json", "address"]).decode()
-  )
+  interfaceInfo = json.loads(check_output(["ip", "--json", "address"]).decode())
   for info in interfaceInfo:
     if info["ifname"] == interface:
       state = info["operstate"]
@@ -148,7 +156,7 @@ def leave_network(networkId, networkName=None):
   )
   if answer == QMessageBox.StandardButton.Yes:
     try:
-      check_output(["zerotier-cli", "leave", networkId])
+      check_call(["zerotier-cli", f"-T{get_token()}", "leave", networkId])
       return True
     except CalledProcessError:
       QMessageBox.warning(
@@ -165,7 +173,7 @@ def toggle_interface(interfaceName):
 
   if state.lower() == "down":
     try:
-      check_output(
+      check_call(
         ["pkexec", "ip", "link", "set", interfaceName, "up"]
       )
       return True
@@ -173,7 +181,7 @@ def toggle_interface(interfaceName):
       return False
   else:
     try:
-      check_output(
+      check_call(
         ["pkexec", "ip", "link", "set", interfaceName, "down"]
       )
       return True
@@ -193,8 +201,6 @@ def get_service_status():
   return formatted_data
 
 def setup_auth_token():
-  if os.getuid() == 0:
-    return
   if not os.path.isfile("/var/lib/zerotier-one/authtoken.secret"):
     allowed_to_start_service = QMessageBox.question(
       None,
@@ -212,42 +218,42 @@ def setup_auth_token():
       manage_service("start")
     else:
       os._exit(0)
-  username = getpass.getuser()
-  allowed_to_run_as_root = QMessageBox.question(
-    None,
-    "Root access needed",
-    textwrap.dedent(
-      f"""\
-      In order to grant {username} permission
-      to use ZeroTier we need temporary root access to
-      add them to the zerotier-one group and change the
-      auth-token permissions in /var/lib/zerotier-one.
-      Otherwise, you would need to run this
-      program as root. Grant access?
-      """
-    )
-  )
-  if allowed_to_run_as_root == QMessageBox.StandardButton.Yes:
-    # TODO: replace usage of system()
-    os.system(textwrap.dedent(
-      f"""\
-      pkexec bash -c "usermod -aG zerotier-one {username} &&
-      chmod 660 /var/lib/zerotier-one/authtoken.secret &&
-      chmod 660 /var/lib/zerotier-one/identity.secret"
-      """
-    ))
-    QMessageBox.information(
+  if os.getuid() == 0:
+    return
+  if not os.path.isfile(AUTH_FILE):
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+    answer = QMessageBox.question(
       None,
-      "Success",
-      textwrap.dedent(
-        """\
-        You were successfully added to the zerotier-one
-        group. If you're still having problems, you may need
-        to re-login in order for the changes to take effect.
-        """
-      )
+      "Missing Local Authtoken",
+      textwrap.dedent(f"""\
+        This user doesn't have ZeroTier-One Authtoken file.
+        Choosing Yes will ask you for password to
+        copy the authtoken.secret from
+        /var/lib/zerotier-one/
+        to
+        {CONFIG_DIR}
+        """),
     )
-  os._exit(0)
+    if answer == QMessageBox.StandardButton.Yes:
+      try:
+        check_output([
+          "pkexec", "bash", "-c",
+          f"""
+          cp /var/lib/zerotier-one/authtoken.secret {AUTH_FILE} &&
+          chown {os.getuid()}:{os.getgid()} {AUTH_FILE}""",
+        ], stderr=proc.PIPE)
+      except CalledProcessError as error:
+        QMessageBox.critical(
+          None,
+          "Operation Failed",
+          textwrap.dedent(f"""\
+          Failed to copy authtoken.secret.
+
+          Command Output: {error.stderr.decode().strip()}
+          """))
+        os._exit(1)
+    else:
+      os._exit(1)
 
 # ============ DIALOGS =====================
 def about_window():
@@ -371,7 +377,6 @@ class PeersList(QDialog):
   def peerpaths(self):
     peerpaths = PeerPaths(peerIndex=self.table.indexOfTopLevelItem(self.table.currentItem()), parent=self)
     peerpaths.show()
-
 
 class PeerPaths(QDialog):
   def __init__(self, peerIndex, parent: QWidget = None): # pyright: ignore
@@ -622,7 +627,7 @@ class MainWindow(QMainWindow):
       self.refresh_networks()
       self.joinTextBox.clear()
       QTimer.singleShot(1000, self.refresh_networks)
-      QTimer.singleShot(3000, self.refresh_networks)
+      QTimer.singleShot(5000, self.refresh_networks)
 
   def refresh_networks(self):
     status = get_status()
@@ -667,13 +672,16 @@ if __name__ == "__main__":
 
   QApplication.setWindowIcon(QIcon.fromTheme(QApplication.applicationName()))
 
+  setup_auth_token()
+
   # simple check for zerotier
   while True:
     try:
-      check_output(["zerotier-cli", "listnetworks"], stderr=STDOUT)
+      check_output(["zerotier-cli", f"-T{get_token()}", "listnetworks"], stderr=STDOUT)
     # in case the command throws an error
     except CalledProcessError as error:
       # no zerotier authtoken
+      print(error.returncode)
       if error.returncode == 2:
         QMessageBox.information(
           None,
@@ -688,9 +696,9 @@ if __name__ == "__main__":
           None,
           "ZeroTier-One Service",
           "The 'zerotier-one' service isn't running.\n\n"
-          "Do you wish to grant root access to enable it?",
+          "Do you wish to start it now?",
         )
-        if allowed_to_enable_service:
+        if allowed_to_enable_service == QMessageBox.StandardButton.Yes:
           manage_service("start")
         else:
           os._exit(1)
