@@ -44,6 +44,7 @@ import os
 import sys
 import json
 import signal
+import shutil
 import textwrap
 import subprocess as proc
 from subprocess import check_call, check_output, STDOUT, CalledProcessError
@@ -227,11 +228,13 @@ def setup_auth_token():
       "Missing Local Authtoken",
       textwrap.dedent(f"""\
         This user doesn't have ZeroTier-One Authtoken file.
-        Choosing Yes will ask you for password to
+        Choosing «Yes» will ask you for password to
         copy the authtoken.secret from
         /var/lib/zerotier-one/
         to
         {CONFIG_DIR}
+
+        «No» will exit the program.
         """),
     )
     if answer == QMessageBox.StandardButton.Yes:
@@ -241,16 +244,15 @@ def setup_auth_token():
           f"""
           cp /var/lib/zerotier-one/authtoken.secret {AUTH_FILE} &&
           chown {os.getuid()}:{os.getgid()} {AUTH_FILE}""",
-        ], stderr=proc.PIPE)
+        ], stderr=STDOUT)
       except CalledProcessError as error:
+        if error.returncode == 127:
+          os._exit(1)
         QMessageBox.critical(
           None,
           "Operation Failed",
-          textwrap.dedent(f"""\
-          Failed to copy authtoken.secret.
-
-          Command Output: {error.stderr.decode().strip()}
-          """))
+          "Failed to copy authtoken.secret.\n\n"
+          f"Command Output:\n {error.output.decode().strip()}")
         os._exit(1)
     else:
       os._exit(1)
@@ -672,50 +674,50 @@ if __name__ == "__main__":
 
   QApplication.setWindowIcon(QIcon.fromTheme(QApplication.applicationName()))
 
+  # Check if zerotier-one is installed
+  if shutil.which("zerotier-cli") is None:
+    QMessageBox.critical(
+      None,
+      "No zerotier-cli",
+      "zerotier-cli is not installed or is not in PATH.\n"
+      f"Ensure that it's available before running {APP_NAME}.",
+    )
+    os._exit(127)
+  # Check if service is running
+  if not get_service_status()["ActiveState"] == "active":
+    answer = QMessageBox.question(
+      None,
+      "Start Service",
+      "The 'zerotier-one' service isn't running.\n\n"
+      "Do you wish to start it now?",
+    )
+    if answer == QMessageBox.StandardButton.Yes:
+      manage_service("start")
+    else:
+      os._exit(1)
+
   # Ensure token is available
   setup_auth_token()
 
-  # TODO:
-    #     Check if service is actually running with systemctl
-    #     Check if command is available with other means
-    #     Only then do setup_auth_token()
-  # simple check for zerotier
-  while True:
-    try:
-      check_output(["zerotier-cli", f"-T{get_token()}", "listnetworks"], stderr=STDOUT)
-    # in case the command throws an error
-    except CalledProcessError as error:
-      # service not running
-      if error.returncode == 1:
-        allowed_to_enable_service = QMessageBox.question(
-          None,
-          "ZeroTier-One Service",
-          "The 'zerotier-one' service isn't running.\n\n"
-          "Do you wish to start it now?",
-        )
-        if allowed_to_enable_service == QMessageBox.StandardButton.Yes:
-          manage_service("start")
-        else:
-          os._exit(1)
-      # in case there's no command
-      if error.returncode == 127:
-        QMessageBox.critical(
-          None,
-          "Error",
-          "ZeroTier isn't installed!",
-        )
-        print("ZeroTier isn't installed", file=sys.stderr)
-        os._exit(127)
-      break
-    except FileNotFoundError:
+  try:
+    check_output(["zerotier-cli", f"-T{get_token()}", "listnetworks"], stderr=STDOUT)
+  # in case the command throws an error
+  except CalledProcessError as error:
+    # Can't connect to the service
+    if error.returncode == 1:
       QMessageBox.critical(
         None,
         "Error",
-        "ZeroTier isn't installed!",
+        "The service is active, but zerotier-cli can't connect to it.\n\n"
+        f"Command Output:\n {error.output.decode().strip()}",
       )
-      print("ZeroTier isn't installed", file=sys.stderr)
-      os._exit(127)
-    break
+    QMessageBox.critical(
+      None,
+      "Error",
+      "zerotier-cli exited with an unknown error.\n\n"
+      f"Command Output:\n {error.output.decode().strip()}",
+    )
+    os._exit(1)
   signal.signal(signal.SIGINT, signal.SIG_DFL)
   mainwindow = MainWindow()
   mainwindow.show()
