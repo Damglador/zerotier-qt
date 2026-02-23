@@ -46,7 +46,6 @@ import json
 import signal
 import shutil
 import textwrap
-import subprocess as proc
 from subprocess import check_call, check_output, STDOUT, CalledProcessError
 
 APP_ID = "zerotier-qt"
