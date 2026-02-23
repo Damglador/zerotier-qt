@@ -1,7 +1,7 @@
 # ZeroTier Qt
 A Qt front-end for ZeroTier
 
-A rewrite of https://github.com/tralph3
+A rewrite of https://github.com/tralph3/ZeroTier-GUI
 
 The icon is from https://github.com/PapirusDevelopmentTeam/papirus-icon-theme
 
