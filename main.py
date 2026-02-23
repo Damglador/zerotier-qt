@@ -672,24 +672,19 @@ if __name__ == "__main__":
 
   QApplication.setWindowIcon(QIcon.fromTheme(QApplication.applicationName()))
 
+  # Ensure token is available
   setup_auth_token()
 
+  # TODO:
+    #     Check if service is actually running with systemctl
+    #     Check if command is available with other means
+    #     Only then do setup_auth_token()
   # simple check for zerotier
   while True:
     try:
       check_output(["zerotier-cli", f"-T{get_token()}", "listnetworks"], stderr=STDOUT)
     # in case the command throws an error
     except CalledProcessError as error:
-      # no zerotier authtoken
-      print(error.returncode)
-      if error.returncode == 2:
-        QMessageBox.information(
-          None,
-          "Error",
-          "This user doesn't have access to ZeroTier!",
-        )
-        setup_auth_token()
-        continue
       # service not running
       if error.returncode == 1:
         allowed_to_enable_service = QMessageBox.question(
