@@ -62,6 +62,7 @@ AUTH_FILE = os.path.join(CONFIG_DIR, "authtoken.secret")
 authtoken = None
 
 # ============ CONTROLLER ==================
+# TODO: Add a button to update authtoken.secret
 def get_token() -> str:
   global authtoken
   if authtoken is not None:
