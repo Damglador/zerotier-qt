@@ -19,7 +19,7 @@ The icon is from https://github.com/PapirusDevelopmentTeam/papirus-icon-theme
 - zerotier-one
 
 # Installation
-You can install it from AUR:
+You can install it from [AUR](https://aur.archlinux.org/packages/zerotier-qt):
 ```
 yay -S zerotier-qt
 ```
