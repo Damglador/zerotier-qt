@@ -24,15 +24,15 @@ You can install it from [AUR](https://aur.archlinux.org/packages/zerotier-qt):
 yay -S zerotier-qt
 ```
 
-Or, everywhere else, with:
+Get an AppImage: https://github.com/Damglador/zerotier-qt/releases/latest/download/zerotier-qt-x86_64.AppImage
+
+Or install for you user with:
 ```
 cd ${TMPDIR:-/tmp}
 git clone https://github.com/Damglador/zerotier-qt
 cd zerotier-qt
 make install
 ```
-
-AppImage: soon™
 
 # Screenshots
 (My IDs and addresses are edited out)
