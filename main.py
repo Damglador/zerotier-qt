@@ -50,7 +50,7 @@ from subprocess import check_call, check_output, STDOUT, CalledProcessError
 
 APP_ID = "zerotier-qt"
 APP_NAME = "ZeroTier-Qt"
-APP_VERSION = "0.9"
+APP_VERSION = "1.0"
 
 HOME_DIR = str(QStandardPaths.standardLocations(QStandardPaths.StandardLocation.HomeLocation)[0])
 CONFIG_DIR = os.path.join(
@@ -81,15 +81,17 @@ def get_status():
   status = status.split()
   return status
 
-def manage_service(action: str):
+def manage_service(action: str) -> bool:
   try:
-    check_output(["systemctl", action, "zerotier-one"])
+    check_output(["systemctl", action, "zerotier-one"], stderr=STDOUT)
+    return True
   except CalledProcessError as error:
     QMessageBox.warning(
       None,
       "Error",
-      f'Something went wrong: "{error}"'
+      f'Something went wrong: "{error.stderr.decode().strip()}"'
     )
+    return False
 
 def change_config(network_id: str, config: str, value):
   # zerotier-cli only accepts int values
@@ -699,7 +701,8 @@ if __name__ == "__main__":
       "Do you wish to start it now?",
     )
     if answer == QMessageBox.StandardButton.Yes:
-      manage_service("start")
+      if not manage_service("start"):
+        os._exit(1)
     else:
       os._exit(1)
 
@@ -718,13 +721,14 @@ if __name__ == "__main__":
         "The service is active, but zerotier-cli can't connect to it.\n\n"
         f"Command Output:\n {error.output.decode().strip()}",
       )
+      os._exit(1)
     QMessageBox.critical(
       None,
       "Error",
       "zerotier-cli exited with an unknown error.\n\n"
       f"Command Output:\n {error.output.decode().strip()}",
     )
-    os._exit(1)
+    os._exit(error.returncode)
   signal.signal(signal.SIGINT, signal.SIG_DFL)
   mainwindow = MainWindow()
   mainwindow.show()
