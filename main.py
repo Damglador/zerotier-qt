@@ -107,12 +107,6 @@ def join_network(network_id):
       )
       return False
     check_output(["zerotier-cli", "join", network_id])
-    # add_network_to_history(network_id) # TODO: implement history? idk if it's even needed
-    # QMessageBox.information(
-    #   None,
-    #   QApplication.applicationDisplayName(),
-    #   "Successfully joined the network.",
-    # )
     return True
   except CalledProcessError:
     QMessageBox.warning(
@@ -256,8 +250,6 @@ def setup_auth_token():
   os._exit(0)
 
 # ============ DIALOGS =====================
-# TODO:
-  # Show Status somewhere else in GUI
 def about_window():
   QMessageBox.about(
       None,
@@ -495,7 +487,6 @@ class MainWindow(QMainWindow):
 
     tableColumns = ["ID", "Name", "Status", "Interface"]
     self.networksTable = Table(centralWidget, tableColumns)
-    self.refresh_networks()
     mainLayout.addWidget(self.networksTable)
 
     # self.setMinimumWidth(     int(self.networksTable.header().length() + 100)      )
@@ -558,14 +549,12 @@ class MainWindow(QMainWindow):
 
     bottomSubLayout.addStretch()
 
-    bottomSubLayout.addWidget(
-      QLabel(
-        text=f"Your ID: {get_status()[2]}",
-        textInteractionFlags=Qt.TextInteractionFlag.TextSelectableByMouse
-      )
-    )
+    self.statusLabel = QLabel(textInteractionFlags=Qt.TextInteractionFlag.TextSelectableByMouse)
+    bottomSubLayout.addWidget(self.statusLabel)
 
     # TODO: open https://central.zerotier.com/network/NETWORKID to go directly to network's page
+    #       the issue is old central and new central have seperate networks,
+    #       so it needs to know which belongs where
     oldcentralBtn = QPushButton("Old Central")
     oldcentralBtn.setIcon(QIcon.fromTheme("zerotier-central-old"))
     oldcentralBtn.setToolTip("Open ZeroTier Legacy Central in your browser")
@@ -576,6 +565,8 @@ class MainWindow(QMainWindow):
     newcentralBtn.setToolTip("Open ZeroTier New Central in your browser")
     newcentralBtn.clicked.connect(lambda: QDesktopServices.openUrl("https://central.zerotier.com"))
     bottomSubLayout.addWidget(newcentralBtn)
+
+    self.refresh_networks()
 
   def call_networkinfo(self):
     networkinfo(self.networksTable.indexOfTopLevelItem(self.networksTable.currentItem()))
@@ -634,6 +625,9 @@ class MainWindow(QMainWindow):
       QTimer.singleShot(3000, self.refresh_networks)
 
   def refresh_networks(self):
+    status = get_status()
+    self.statusLabel.setText(f"Your ID: {status[2]} Status: {status[4]}")
+
     self.networksTable.clear()
     networks = []
     # outputs info of networks in json format
