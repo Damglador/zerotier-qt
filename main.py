@@ -27,6 +27,7 @@
 #                                 #
 ###################################
 
+from time import sleep
 from PySide6.QtCore import (
   QStandardPaths, QTimer, Qt,
 )
@@ -703,6 +704,8 @@ if __name__ == "__main__":
     if answer == QMessageBox.StandardButton.Yes:
       if not manage_service("start"):
         os._exit(1)
+      else:
+        sleep(2)
     else:
       os._exit(1)
 
