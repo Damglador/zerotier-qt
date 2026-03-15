@@ -211,7 +211,7 @@ def get_service_status():
 
   return formatted_data
 
-def setup_auth_token():
+def setup_authtoken():
   if not os.path.isfile("/var/lib/zerotier-one/authtoken.secret"):
     allowed_to_start_service = QMessageBox.question(
       None,
@@ -248,24 +248,29 @@ def setup_auth_token():
         """),
     )
     if answer == QMessageBox.StandardButton.Yes:
-      try:
-        check_output([
-          "pkexec", "bash", "-c",
-          f"""
-          cp /var/lib/zerotier-one/authtoken.secret {AUTH_FILE} &&
-          chown {os.getuid()}:{os.getgid()} {AUTH_FILE}""",
-        ], stderr=STDOUT)
-      except CalledProcessError as error:
-        if error.returncode == 127:
-          os._exit(1)
-        QMessageBox.critical(
-          None,
-          "Operation Failed",
-          "Failed to copy authtoken.secret.\n\n"
-          f"Command Output:\n {error.output.decode().strip()}")
-        os._exit(1)
+      import_authtoken()
     else:
       os._exit(1)
+
+def import_authtoken():
+  try:
+    check_output([
+      "pkexec", "bash", "-c",
+      f"""
+      cp /var/lib/zerotier-one/authtoken.secret {AUTH_FILE} &&
+      chown {os.getuid()}:{os.getgid()} {AUTH_FILE}""",
+    ], stderr=STDOUT)
+  except CalledProcessError as error:
+    if error.returncode == 127: # TODO: Why do we just exit here? What's the 127 code?
+      os._exit(1)
+    QMessageBox.critical(
+      None,
+      "Operation Failed",
+      "Failed to copy authtoken.secret.\n\n"
+      f"Command Output:\n {error.output.decode().strip()}"
+    )
+    os._exit(1)
+  return
 
 # ============ DIALOGS =====================
 def about_window():
@@ -710,12 +715,25 @@ if __name__ == "__main__":
       os._exit(1)
 
   # Ensure token is available
-  setup_auth_token()
+  setup_authtoken()
 
   try:
     check_output(["zerotier-cli", f"-T{get_token()}", "listnetworks"], stderr=STDOUT)
   # in case the command throws an error
   except CalledProcessError as error:
+    # Invalid authtoken
+    if b'401 listnetworks {}' in error.stdout:
+      answer = QMessageBox.question(
+        None,
+        "Access Denied",
+        "Authtoken seems to be invalid.\n"
+        "Import authtoken from root again?",
+      )
+      if answer == QMessageBox.StandardButton.Yes:
+        import_authtoken()
+        os.execv(sys.argv[0], sys.argv) # restart
+      else:
+        os._exit(1)
     # Can't connect to the service
     if error.returncode == 1:
       QMessageBox.critical(
