@@ -21,6 +21,7 @@ overrides:
         - python3-pyside6.qtcore
         - python3-pyside6.qtgui
         - python3-pyside6.qtwidgets
+        - pkexec
     archlinux:
       depends:
         - zerotier-one
