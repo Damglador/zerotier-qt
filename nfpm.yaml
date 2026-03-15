@@ -7,7 +7,7 @@ homepage: "http://github.com/Damglador/zerotier-qt"
 maintainer: "Damglador <damglador@gmail.com>"
 license: "GPL-3.0"
 arch: "all"
-version: "1.0"  # pkgver
+version: "1.1"  # pkgver
 release: "1"    # pkgrel
 
 overrides:

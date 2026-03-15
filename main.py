@@ -51,7 +51,7 @@ from subprocess import check_call, check_output, STDOUT, CalledProcessError
 
 APP_ID = "zerotier-qt"
 APP_NAME = "ZeroTier-Qt"
-APP_VERSION = "1.0"
+APP_VERSION = "1.1"
 
 HOME_DIR = str(QStandardPaths.standardLocations(QStandardPaths.StandardLocation.HomeLocation)[0])
 CONFIG_DIR = os.path.join(
