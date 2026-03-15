@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
+
+name: "zerotier-qt"
+description: A Qt front-end for ZeroTier
+homepage: "http://github.com/Damglador/zerotier-qt"
+maintainer: "Damglador <damglador@gmail.com>"
+license: "GPL-3.0"
+arch: "all"
+version: "1.0"  # pkgver
+release: "1"    # pkgrel
+
+overrides:
+    rpm:
+      depends:
+        - zerotier-one
+        - python3-pyside6
+    deb:
+      depends:
+        - zerotier-one
+        - python3-pyside6.qtcore
+        - python3-pyside6.qtgui
+        - python3-pyside6.qtwidgets
+    archlinux:
+      depends:
+        - zerotier-one
+        - pyside6
+#changelog: "changelog.yml"
+
+contents:
+  - src: ./main.py
+    dst: /usr/bin/zerotier-qt
+    file_info:
+      mode: 0755
+  - src: ./assets/zerotier-qt.desktop
+    dst: /usr/share/applications/zerotier-qt.desktop
+  - src: ./assets/zerotier-qt.svg
+    dst: /usr/share/icons/hicolor/scalable/apps/zerotier-qt.svg
+  - src: ./assets/zerotier-central-new.png
+    dst: /usr/share/pixmaps/zezerotier-central-old.png
+  - src: ./assets/zerotier-central-old.png
+    dst: /usr/share/pixmaps/zerotier-central-old.png

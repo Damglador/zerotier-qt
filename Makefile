@@ -21,3 +21,8 @@ uninstall:
 	rm $${XDG_DATA_HOME:-$$HOME/.local/share}/icons/zerotier-qt.svg
 	rm $${XDG_DATA_HOME:-$$HOME/.local/share}/icons/zerotier-central-new.png
 	rm $${XDG_DATA_HOME:-$$HOME/.local/share}/icons/zerotier-central-old.png
+
+package: nfpm.yaml
+	for packager in deb rpm archlinux; do \
+		nfpm package --packager $$packager || exit 1; \
+	done
