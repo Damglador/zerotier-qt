@@ -452,7 +452,7 @@ class PeerPaths(QDialog):
     self.table.populate(paths)
 
 class Table(QTreeWidget):
-  def __init__(self, parent, columns: list):
+  def __init__(self, parent, columns: list[str]):
     super().__init__(parent)
     self.columns = columns
     self.setColumnCount(len(columns))
