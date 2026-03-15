@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # A Qt front-end for ZeroTier
 # Copyright (C) 2023 Tomás Ralph
