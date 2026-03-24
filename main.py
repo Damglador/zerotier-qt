@@ -77,10 +77,19 @@ def get_token() -> str:
     authtoken = open(AUTH_FILE).read().strip()
     return authtoken
 
+def zerotier_cli(args: list[str], raise_error=False):
+  output = b""
+  try:
+    output = check_output(["zerotier-cli", f"-T{get_token()}"] + args)
+  except CalledProcessError as error:
+    if raise_error:
+      raise
+    else:
+      print(f"zerotier-cli exited with an error: {error.output.decode().strip()}")
+  return output
+
 def get_status():
-  status = check_output(["zerotier-cli", f"-T{get_token()}", "status"]).decode()
-  status = status.split()
-  return status
+  return zerotier_cli(["status"]).decode().split()
 
 def manage_service(action: str) -> bool:
   try:
@@ -98,16 +107,12 @@ def change_config(network_id: str, config: str, value):
   # zerotier-cli only accepts int values
   value = int(value)
   try:
-    check_output(
-      ["zerotier-cli", f"-T{get_token()}", "set", network_id, f"{config}={value}",],
-      stderr=STDOUT,
-    )
+    zerotier_cli(["set", network_id, f"{config}={value}"], raise_error=True)
   except CalledProcessError as error:
-    error = error.output.decode().strip()
     QMessageBox.warning(
       None,
       "Failed to change config",
-      f'Error: "{error}"'
+      f'Error: "{error.output.decode().strip()}"'
     )
 
 def is_on_network(network_id):
@@ -127,7 +132,7 @@ def join_network(network_id):
         "You are already a member of this network.",
       )
       return False
-    check_call(["zerotier-cli", f"-T{get_token()}", "join", network_id])
+    zerotier_cli(["join", network_id], raise_error=True)
     return True
   except CalledProcessError:
     QMessageBox.warning(
@@ -145,10 +150,10 @@ def get_network_name_by_id(network_id):
 
 # TODO: describe data structure
 def get_networks_info():
-  return json.loads(check_output(["zerotier-cli", f"-T{get_token()}", "-j", "listnetworks"]))
+  return json.loads(zerotier_cli(["-j", "listnetworks"]))
 
 def get_peers_info():
-  return json.loads(check_output(["zerotier-cli", f"-T{get_token()}", "-j", "peers"]))
+  return json.loads(zerotier_cli(["-j", "peers"]))
 
 def get_interface_state(interface):
   interfaceInfo = json.loads(check_output(["ip", "--json", "address"]).decode())
@@ -167,7 +172,7 @@ def leave_network(networkId, networkName=None):
   )
   if answer == QMessageBox.StandardButton.Yes:
     try:
-      check_call(["zerotier-cli", f"-T{get_token()}", "leave", networkId])
+      zerotier_cli(["leave", networkId])
       return True
     except CalledProcessError:
       QMessageBox.warning(
@@ -718,7 +723,7 @@ if __name__ == "__main__":
   setup_authtoken()
 
   try:
-    check_output(["zerotier-cli", f"-T{get_token()}", "listnetworks"], stderr=STDOUT)
+    zerotier_cli(["listnetworks"], raise_error=True)
   # in case the command throws an error
   except CalledProcessError as error:
     # Invalid authtoken
