@@ -123,7 +123,7 @@ def is_on_network(network_id):
     currently_joined = network["nwid"] == network_id
   return currently_joined
 
-def join_network(network_id):
+def join_network(network_id: str):
   try:
     if is_on_network(network_id):
       QMessageBox.information(
@@ -206,7 +206,8 @@ def toggle_interface(interfaceName):
 
 def get_service_status():
   data = check_output(
-    ["systemctl", "show", "zerotier-one", "--property=ActiveState,UnitFileState"], universal_newlines=True
+    ["systemctl", "show", "zerotier-one", "--property=ActiveState,UnitFileState"],
+    universal_newlines=True
   ).split("\n")
   formatted_data = {}
   for entry in data:
@@ -601,6 +602,7 @@ class MainWindow(QMainWindow):
   def start_stop_service(self):
     status = get_service_status()
     if status["ActiveState"] == "active":
+      print("Stopping service")
       manage_service("stop")
     else:
       print("Starting service")
