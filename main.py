@@ -280,11 +280,13 @@ def import_authtoken():
 
 # ============ DIALOGS =====================
 def about_window():
+  status = get_status()
+  zerotier_version = status[3] if 3 < len(status) else "Unknown"
   QMessageBox.about(
       None,
       "About",
       f"""
-      <b>ZeroTier Version {get_status()[3]}<br>
+      <b>ZeroTier Version {zerotier_version}<br>
       {QApplication.applicationDisplayName()} Version {QApplication.applicationVersion()}</b><br>
       Qt front-end for ZeroTier One<br>
       Created by Vsevolod «Damglador» Stopchanskyi<br>
