@@ -205,10 +205,13 @@ def toggle_interface(interfaceName):
       return False
 
 def get_service_status():
-  data = check_output(
-    ["systemctl", "show", "zerotier-one", "--property=ActiveState,UnitFileState"],
-    universal_newlines=True
-  ).split("\n")
+  try:
+    data = check_output(
+      ["systemctl", "show", "zerotier-one", "--property=ActiveState,UnitFileState"],
+      universal_newlines=True
+    ).split("\n")
+  except CalledProcessError:
+    data = ["ActiveState=UNKNOWN", "UnitFileState=UNKNOWN"]
   formatted_data = {}
   for entry in data:
     key_value = entry.split("=", 1)
