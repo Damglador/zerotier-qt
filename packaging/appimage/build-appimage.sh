@@ -3,6 +3,7 @@ set -eux
 
 ARCH="$(uname -m)"
 SHARUN="https://raw.githubusercontent.com/pkgforge-dev/Anylinux-AppImages/refs/heads/main/useful-tools/quick-sharun.sh"
+EXTRA_PACKAGES="https://raw.githubusercontent.com/pkgforge-dev/Anylinux-AppImages/refs/heads/main/useful-tools/get-debloated-pkgs.sh"
 
 APP_NAME=zerotier-qt
 
@@ -15,8 +16,9 @@ export OUTNAME=$APP_NAME-"$ARCH".AppImage
 # sharun options
 export DEPLOY_SYS_PYTHON=1
 
-sudo pacman -S --needed --noconfirm git base-devel zsync
-sudo pacman -S --needed --noconfirm breeze
+sudo pacman -S --needed --noconfirm git base-devel wget zsync
+sudo pacman -S --needed --noconfirm breeze qt6ct kvantum lxqt-qtplugin
+
 if [ ! -d zerotier-qt ]; then
   git clone https://aur.archlinux.org/zerotier-qt.git
   cd zerotier-qt
@@ -27,12 +29,20 @@ fi
 makepkg -Cfsi --noconfirm
 cd ..
 
+echo "Installing debloated packages..."
+echo "---------------------------------------------------------------"
+wget --retry-connrefused --tries=30 "$EXTRA_PACKAGES" -O ./get-debloated-pkgs.sh
+chmod +x ./get-debloated-pkgs.sh
+./get-debloated-pkgs.sh --prefer-nano --add-common ! qt6-base
+
 # Download and run quick-sharun
 wget "$SHARUN" -O ./quick-sharun
 chmod +x ./quick-sharun
 
 # Bundle the application
-./quick-sharun /usr/bin/$APP_NAME
+./quick-sharun "/usr/bin/${APP_NAME}" \
+  /usr/lib/libQt6Core.so*  \
+  /usr/lib/libQt6Gui.so*
 
 # My tweaks
 for item in /usr/lib/python3.14/*; do
